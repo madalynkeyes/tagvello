@@ -10,6 +10,7 @@ Tagvello is a cross-platform mobile app that tracks the products you want, recor
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-blue)
 ![Backend](https://img.shields.io/badge/backend-FastAPI-009688)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-336791)
+![Cloud](https://img.shields.io/badge/cloud-AWS-FF9900)
 
 > 🚧 **Project status:** Planning / pre-development. This README describes the target design; sections will be updated as each milestone ships. Progress is tracked in [`PROJECT_LOG.md`](PROJECT_LOG.md).
 
@@ -69,21 +70,22 @@ flowchart TD
         APP["📱 Mobile App<br/>React Native + Expo"]
     end
 
-    subgraph Backend["Backend (FastAPI)"]
-        API["REST API<br/>Products · Watchlist · Alerts · Auth"]
+    subgraph Backend["Backend (FastAPI on AWS)"]
+        API["REST API on Lambda<br/>Products · Watchlist · Alerts"]
     end
 
-    subgraph Jobs["Scheduled Worker"]
+    subgraph Jobs["Worker Lambda (EventBridge Scheduler)"]
         ING["Price Ingestion<br/>(deduplicated per listing)"]
         EVAL["Alert Evaluation"]
         NOTIF["Notification Dispatch"]
     end
 
-    DB[("PostgreSQL")]
+    DB[("Amazon RDS<br/>PostgreSQL")]
     SRC["Retailer APIs<br/>(provider adapters)"]
     PUSH["Expo Push Service"]
 
-    APP -- "HTTPS / JWT" --> API
+    APP -- "OAuth sign-in" --> COG["Amazon Cognito<br/>(Google sign-in)"]
+    APP -- "HTTPS + JWT" --> GW["API Gateway<br/>(JWT authorizer)"] --> API
     API <--> DB
     ING -- "rate-limited requests" --> SRC
     ING -- "price_observations" --> DB
@@ -116,6 +118,7 @@ erDiagram
 
     USERS {
         uuid id PK
+        text cognito_sub UK "OAuth identity"
         text email UK
         timestamptz created_at
     }
@@ -234,15 +237,25 @@ No unauthorized scraping. Every observation records its `source`, and the UI lab
 | Charts | **Victory Native** | Native-performance price-history charts. |
 | Backend | **Python + FastAPI** | Typed request/response models, automatic OpenAPI docs, async HTTP clients for provider calls. |
 | ORM / Migrations | **SQLAlchemy 2.0 + Alembic** | Version-controlled schema changes, with raw SQL available for analytics queries. |
-| Database | **PostgreSQL** (Supabase-hosted) | Relational integrity, window functions for price analytics, managed backups. |
-| Auth | **Supabase Auth** (OAuth: Google / Apple) | Real OAuth sign-in without building an identity system; the backend verifies the JWTs. |
-| Scheduled worker | **Cron-triggered worker** (Railway cron or AWS EventBridge + Lambda) | Runs ingestion independently of the API and the app. |
-| Hosting | **Docker** on Railway or AWS App Runner | Same container locally and in production. |
+| Auth | **Amazon Cognito** (OAuth 2.0 / OIDC: Google sign-in) + `expo-auth-session` | Real OAuth with PKCE on mobile; API Gateway validates Cognito JWTs before requests reach the backend. |
+| API hosting | **AWS Lambda** + **API Gateway (HTTP API)**, FastAPI via Mangum | Serverless: costs nothing when idle, no servers to patch. |
+| Scheduled worker | **Amazon EventBridge Scheduler → Lambda** | Runs ingestion on a schedule, independent of the API and the app. |
+| Database | **Amazon RDS for PostgreSQL** (single-AZ micro instance) | Managed Postgres with relational integrity and window functions for price analytics. |
+| Secrets | **SSM Parameter Store** (SecureString) | Free storage for the Kroger credentials and database password. |
+| Infrastructure as code | **AWS SAM** | The whole stack is defined in one template, so it can be rebuilt or torn down with one command. |
+| Local dev | **Docker Compose** (Postgres) | Same database engine locally as in production. |
 | Testing | **pytest** + Testcontainers (Postgres) | Tests run against a real database, not mocks. |
 | CI/CD | **GitHub Actions** | Lint, type-check, test, and migrate on every push. |
 | AI (optional) | Embeddings / LLM API | Post-MVP only: help with ambiguous product matching. Never a hard dependency. |
 
 Deliberately excluded: microservices, Kubernetes, and message queues. No requirement justifies them at this scale.
+
+### Keeping AWS costs low
+
+- **No NAT gateway.** Lambdas run outside a VPC, and the database requires TLS with locked-down credentials. A NAT gateway would be the single most expensive line item for a project this size.
+- **Pay-per-use compute.** Lambda, API Gateway, and EventBridge cost close to nothing at student-project traffic. Cognito is free up to 10,000 monthly active users.
+- **The database is the main cost.** It runs on a single small instance, paid from AWS Free Tier credits. It can be stopped when not in use.
+- **Guardrails from day one.** An AWS Budget with email alerts at low thresholds, and a single SAM stack so everything can be deleted cleanly.
 
 ## Engineering Highlights
 
@@ -273,7 +286,7 @@ tagvello/
 │   │   └── worker/         # Scheduled ingestion entry point
 │   ├── migrations/         # Alembic
 │   ├── tests/
-│   └── Dockerfile
+│   └── template.yaml       # AWS SAM infrastructure
 ├── mobile/                 # Expo app (TypeScript)
 ├── docs/
 │   ├── project-brief.md    # Original project brief
@@ -297,7 +310,7 @@ tagvello/
 
 ### Week 2: Backend API
 - [ ] Endpoints for product search, watchlist, price history, and alert rules
-- [ ] Supabase JWT verification and per-user authorization
+- [ ] Cognito user pool with Google sign-in; JWT authorizer and per-user authorization
 - [ ] pytest suite against a real Postgres
 
 ### Week 3: Mobile app
@@ -305,7 +318,7 @@ tagvello/
 - [ ] Connected to the deployed backend
 
 ### Week 4: Automation & deployment
-- [ ] Deployed API and scheduled worker
+- [ ] AWS SAM stack: Lambda API, EventBridge worker, RDS, Cognito, budget alerts
 - [ ] Alert evaluation, idempotent notification events, Expo push
 - [ ] Retries, logging, and end-to-end tests
 
