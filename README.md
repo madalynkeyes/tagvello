@@ -2,12 +2,12 @@
 
 **Find it once. Track it automatically. Buy it when the price is right.**
 
-Tagvello is a cross-platform mobile app that tracks the products you want, records their real prices across stores over time, and notifies you when a price crosses a threshold you set. Its goal is to answer one question with data instead of marketing:
+Tagvello is a web app that tracks the products you want, records their real prices across stores over time, and notifies you when a price crosses a threshold you set. The MVP is a responsive website; a native mobile app is planned as a second client of the same API. Its goal is to answer one question with data instead of marketing:
 
 > **"Is this actually a good deal, and is now the right time to buy it?"**
 
 ![Status](https://img.shields.io/badge/status-planning-lightgrey)
-![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-blue)
+![Platform](https://img.shields.io/badge/platform-Web-blue)
 ![Backend](https://img.shields.io/badge/backend-FastAPI-009688)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-336791)
 ![Cloud](https://img.shields.io/badge/cloud-AWS-FF9900)
@@ -42,7 +42,7 @@ Design principles:
 - **Real data only.** Every price shown is an actual timestamped observation. Simulated data is used only for clearly labeled tests and demos.
 - **Observed vs. advertised.** Tagvello tells apart a retailer's *advertised* promotion and a price drop it *observed* itself.
 - **Honest freshness.** Every price shows when it was last verified. Stale or unavailable data is labeled as such.
-- **Low effort.** After a product is saved, monitoring happens in the background without the app open.
+- **Low effort.** After a product is saved, monitoring happens in the background, even when nobody has the site open.
 
 ## MVP Features
 
@@ -52,22 +52,22 @@ Design principles:
 | 2 | **Watchlist** | Save, remove, and browse tracked products; persists across sessions. |
 | 3 | **Price history** | A scheduled worker records a price observation for every tracked listing, even when the price hasn't changed. |
 | 4 | **History charts & stats** | Latest, lowest, highest, and average observed price, plus % change over a chosen period, all computed in SQL from real observations. |
-| 5 | **Price alerts** | Notify when a price drops below a target amount or by a minimum percentage, with cooldowns and duplicate prevention. |
+| 5 | **Price alerts** | Notify when a price drops below a target amount, with cooldowns and duplicate prevention. (Minimum-percentage drops are a stretch goal.) |
 | 6 | **Store comparison** | Compare the same product's price across nearby store locations. |
-| 7 | **Push notifications** | Expo push notifications that deep-link to the product page, with an in-app notification feed as a fallback. |
+| 7 | **Email alerts** | Alert emails (Amazon SES) that link to the product page, plus an in-app notification feed. |
 
 **Core screens:** Search · Watchlist · Product Details · Alert Settings · Settings
 
-**Post-MVP:** deal-quality scoring ("lowest price in 30 days"), multi-retailer comparison, URL/share-sheet import, barcode scanning, AI-assisted product matching, and shopping-basket optimization.
+**Post-MVP:** a native mobile app (React Native + Expo) with push notifications, deal-quality scoring ("lowest price in 30 days"), multi-retailer comparison, URL/share-sheet import, barcode scanning, AI-assisted product matching, and shopping-basket optimization.
 
 ## Architecture
 
-A straightforward client–server design. The mobile app never holds retailer credentials, and the backend owns all retrieval, price processing, alert evaluation, and authorization. Ingestion runs on a schedule, separate from user-facing requests.
+A straightforward client–server design. The frontend never holds retailer credentials, and the backend owns all retrieval, price processing, alert evaluation, and authorization. Ingestion runs on a schedule, separate from user-facing requests.
 
 ```mermaid
 flowchart TD
     subgraph Client
-        APP["📱 Mobile App<br/>React Native + Expo"]
+        APP["🌐 Web App<br/>React + Vite"]
     end
 
     subgraph Backend["Backend (FastAPI on AWS)"]
@@ -82,7 +82,7 @@ flowchart TD
 
     DB[("Amazon RDS<br/>PostgreSQL")]
     SRC["Retailer APIs<br/>(provider adapters)"]
-    PUSH["Expo Push Service"]
+    MAIL["Amazon SES<br/>(email alerts)"]
 
     APP -- "OAuth sign-in" --> COG["Amazon Cognito<br/>(Google sign-in)"]
     APP -- "HTTPS + JWT" --> GW["API Gateway<br/>(JWT authorizer)"] --> API
@@ -92,7 +92,7 @@ flowchart TD
     ING --> EVAL
     EVAL -- "notification_events (idempotent)" --> DB
     EVAL --> NOTIF
-    NOTIF --> PUSH --> APP
+    NOTIF --> MAIL -- "alert email links to product" --> APP
 ```
 
 **Provider adapter pattern.** Each data source implements one interface (`search()`, `get_price(listing)`, `rate_limit`), so adding a retailer means adding an adapter. The core system doesn't change.
@@ -184,13 +184,14 @@ erDiagram
         bigint id PK
         bigint alert_rule_id FK
         bigint triggering_observation_id FK
+        text channel "email / in_app (push later)"
         text status "pending/sent/failed"
         int attempts
         timestamptz created_at
         timestamptz sent_at
     }
     DEVICE_TOKENS {
-        bigint id PK
+        bigint id PK "post-MVP: push"
         uuid user_id FK
         text push_token UK
         text platform
@@ -215,6 +216,7 @@ erDiagram
 - Composite index `(listing_id, observed_at DESC)` on price observations for history and latest-price queries.
 - `regular_price` and `promo_price` are stored separately, so the app can tell an advertised sale from a drop it observed itself.
 - `ingestion_runs` gives built-in observability: run counts, failure rates, and freshness.
+- `notification_events.channel` records how each alert was delivered, so push notifications can be added later without changing the alert logic. `device_tokens` is reserved for that post-MVP mobile app.
 
 ## Data Sources
 
@@ -233,13 +235,15 @@ No unauthorized scraping. Every observation records its `source`, and the UI lab
 
 | Layer | Choice | Why |
 |---|---|---|
-| Mobile | **React Native + Expo** (TypeScript) | One codebase for iOS and Android, built-in push notifications, and fast device testing with Expo Go. |
-| Charts | **Victory Native** | Native-performance price-history charts. |
+| Frontend | **React + Vite** (TypeScript) | Fast to build and demo: anyone can open a link, with nothing to install. |
+| Charts | **Recharts** | Simple, responsive price-history charts. |
+| Frontend hosting | **Amazon S3 + CloudFront** | A static site that costs pennies a month. |
 | Backend | **Python + FastAPI** | Typed request/response models, automatic OpenAPI docs, async HTTP clients for provider calls. |
 | ORM / Migrations | **SQLAlchemy 2.0 + Alembic** | Version-controlled schema changes, with raw SQL available for analytics queries. |
-| Auth | **Amazon Cognito** (OAuth 2.0 / OIDC: Google sign-in) + `expo-auth-session` | Real OAuth with PKCE on mobile; API Gateway validates Cognito JWTs before requests reach the backend. |
+| Auth | **Amazon Cognito** (OAuth 2.0 / OIDC: Google sign-in) via the Hosted UI | Real OAuth (authorization code + PKCE) in the browser; API Gateway validates Cognito JWTs before requests reach the backend. |
+| Email alerts | **Amazon SES** | Low-cost transactional email for price alerts. |
 | API hosting | **AWS Lambda** + **API Gateway (HTTP API)**, FastAPI via Mangum | Serverless: costs nothing when idle, no servers to patch. |
-| Scheduled worker | **Amazon EventBridge Scheduler → Lambda** | Runs ingestion on a schedule, independent of the API and the app. |
+| Scheduled worker | **Amazon EventBridge Scheduler → Lambda** | Runs ingestion on a schedule, independent of the API and the website. |
 | Database | **Amazon RDS for PostgreSQL** (single-AZ micro instance) | Managed Postgres with relational integrity and window functions for price analytics. |
 | Secrets | **SSM Parameter Store** (SecureString) | Free storage for the Kroger credentials and database password. |
 | Infrastructure as code | **AWS SAM** | The whole stack is defined in one template, so it can be rebuilt or torn down with one command. |
@@ -253,7 +257,7 @@ Deliberately excluded: microservices, Kubernetes, and message queues. No require
 ### Keeping AWS costs low
 
 - **No NAT gateway.** Lambdas run outside a VPC, and the database requires TLS with locked-down credentials. A NAT gateway would be the single most expensive line item for a project this size.
-- **Pay-per-use compute.** Lambda, API Gateway, and EventBridge cost close to nothing at student-project traffic. Cognito is free up to 10,000 monthly active users.
+- **Pay-per-use compute.** Lambda, API Gateway, EventBridge, and SES cost close to nothing at student-project traffic. Cognito is free up to 10,000 monthly active users.
 - **The database is the main cost.** It runs on a single small instance, paid from AWS Free Tier credits. It can be stopped when not in use.
 - **Guardrails from day one.** An AWS Budget with email alerts at low thresholds, and a single SAM stack so everything can be deleted cleanly.
 
@@ -266,7 +270,7 @@ The parts of the project that go beyond basic CRUD:
 - **SQL price analytics.** Window functions (`LAG`, rolling `AVG`, `MIN() OVER`) compute price changes, observed lows, and trends inside the database.
 - **Latest-price-per-listing queries.** `DISTINCT ON` / `LATERAL` joins backed by composite indexes, with `EXPLAIN ANALYZE` results documented.
 - **Product identity.** A canonical product is matched first by UPC/GTIN, then by model number, with fuzzy or AI matching only as a fallback for ambiguous cases.
-- **Data freshness.** Every response carries `observed_at` and `last_checked_at`, and the app shows staleness explicitly.
+- **Data freshness.** Every response carries `observed_at` and `last_checked_at`, and the UI shows staleness explicitly.
 - **Rate-limit-aware ingestion.** Each provider adapter has its own rate limit, plus retries with backoff and failure logging.
 
 **Metrics to report** (once live): products monitored, observations collected, successful scheduled runs, p95 API latency, detection-to-notification latency, duplicate alerts prevented.
@@ -287,7 +291,7 @@ tagvello/
 │   ├── migrations/         # Alembic
 │   ├── tests/
 │   └── template.yaml       # AWS SAM infrastructure
-├── mobile/                 # Expo app (TypeScript)
+├── web/                    # React + Vite frontend (TypeScript)
 ├── docs/
 │   ├── project-brief.md    # Original project brief
 │   └── decisions/          # Architecture decision records
@@ -298,43 +302,47 @@ tagvello/
 
 ## Roadmap
 
-### Week 1: Data validation & database foundation
+A 3-week, web-first plan. The scope is deliberately tight: one retailer (Kroger), target-price alerts, and one price-history chart. The backend is built so a mobile app can be added later as a second client, with no schema or API changes.
+
+### Week 1: Data & database foundation
 - [ ] Register a Kroger developer app and get an OAuth client-credentials token
 - [ ] Find 2–3 Utah County store `locationId`s
-- [ ] Apply for a Best Buy API key (test whether a BYU email qualifies)
-- [ ] Create the schema with Alembic migrations
+- [ ] Create the schema with Alembic migrations (local Postgres in Docker)
 - [ ] Write the provider interface and the Kroger adapter
 - [ ] Ingestion script stores repeated observations for **10+ real products across multiple stores**
 
 **Milestone:** real prices retrieved and stored for at least 10 products, across more than one store.
 
-### Week 2: Backend API
-- [ ] Endpoints for product search, watchlist, price history, and alert rules
+### Week 2: Backend & deployment
+- [ ] Endpoints for product search, watchlist, price history (SQL stats), store comparison, and alert rules
 - [ ] Cognito user pool with Google sign-in; JWT authorizer and per-user authorization
+- [ ] AWS SAM stack: Lambda API, EventBridge worker, RDS, Cognito, SSM secrets, budget alerts
+- [ ] Alert evaluation with idempotent `notification_events`
 - [ ] pytest suite against a real Postgres
 
-### Week 3: Mobile app
-- [ ] Expo app with Search, Watchlist, Product Details (chart), and Alert Settings
-- [ ] Connected to the deployed backend
+**Milestone:** the deployed worker records prices on a schedule and creates alert events.
 
-### Week 4: Automation & deployment
-- [ ] AWS SAM stack: Lambda API, EventBridge worker, RDS, Cognito, budget alerts
-- [ ] Alert evaluation, idempotent notification events, Expo push
-- [ ] Retries, logging, and end-to-end tests
+### Week 3: Web app, alerts & polish
+- [ ] React app with Search, Watchlist, Product Details (chart + store comparison), and Alert Settings
+- [ ] Email alerts through SES, plus an in-app notification feed
+- [ ] Stale/missing-data states and error handling
+- [ ] Architecture decision records, demo video, and final docs
 
-**Milestone:** a price change produces a push notification with the app closed.
+**Milestone:** a price drop sends an alert email while nobody has the site open.
 
-### Week 5: Polish
-- [ ] Stale/missing-data states, error handling, and query optimization
-- [ ] Installable test build, demo video, final docs
+### Stretch goals / after the class
+- [ ] Minimum-percentage-drop alerts
+- [ ] Native mobile app (React Native + Expo) with push notifications, using the same API
+- [ ] Best Buy as a second retailer
+- [ ] Deal-quality scoring ("lowest price in 30 days")
 
 ## Getting Started
 
-*Setup instructions will be added once the backend and mobile scaffolding land (Weeks 1–3).*
+*Setup instructions will be added once the backend and web scaffolding land (Weeks 1–3).*
 
 ## Known Limitations
 
-- Price history starts empty and builds up over time; early charts will be sparse, and the app says so.
+- Price history starts empty and builds up over time; early charts will be sparse, and the site says so.
 - Observed prices cover only the supported sources and stores, not the whole market.
 - Online and in-store prices may differ; each observation records where it came from.
 
