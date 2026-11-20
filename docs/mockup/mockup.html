@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tagvello UI mockup</title>
+<style>
+  :root {
+    --ink: #1d2433; --muted: #6b7385; --line: #e6e8ee; --bg: #f4f5f8;
+    --brand: #2f6f5e; --brand-soft: #e3f0ec; --drop: #c2410c; --drop-soft: #fdeee4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: #fff; }
+  .canvas { width: 1400px; padding: 36px 40px 30px; background: linear-gradient(180deg, #fbfbfd, #f1f3f7); }
+  .caption { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 22px; }
+  .caption h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .caption span { font-size: 13px; color: var(--muted); }
+  .screens { display: grid; grid-template-columns: 520px 1fr; gap: 28px; }
+  .screen { background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(29,36,51,0.08); }
+  .label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 8px 4px; }
+  .nav { display: flex; align-items: center; gap: 22px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+  .logo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 17px; color: var(--brand); }
+  .nav a { font-size: 13px; color: var(--muted); text-decoration: none; }
+  .nav a.on { color: var(--ink); font-weight: 600; }
+  .nav .avatar { margin-left: auto; width: 28px; height: 28px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+  .body { padding: 20px; }
+  h2 { font-size: 18px; margin-bottom: 4px; }
+  .sub { font-size: 12.5px; color: var(--muted); margin-bottom: 16px; }
+  .item { display: grid; grid-template-columns: 48px 1fr auto; gap: 14px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
+  .thumb { width: 48px; height: 48px; border-radius: 10px; display: grid; place-items: center; font-size: 22px; }
+  .name { font-size: 14px; font-weight: 600; }
+  .meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .price { text-align: right; }
+  .price b { font-size: 16px; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; margin-top: 3px; }
+  .pill.drop { background: var(--drop-soft); color: var(--drop); }
+  .pill.ok { background: var(--brand-soft); color: var(--brand); }
+  .pill.grey { background: #eef0f4; color: var(--muted); }
+  .detail-head { display: flex; gap: 18px; align-items: center; margin-bottom: 18px; }
+  .detail-head .thumb { width: 64px; height: 64px; font-size: 30px; }
+  .big { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0 16px; }
+  .stat { background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+  .stat small { font-size: 11px; color: var(--muted); display: block; }
+  .stat b { font-size: 16px; }
+  .grid2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 18px; align-items: start; }
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .card h3 { font-size: 13.5px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+  .card h3 span { font-weight: 500; color: var(--muted); font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 7px 0; border-top: 1px solid var(--line); }
+  td:last-child { text-align: right; font-weight: 600; }
+  tr.best td { color: var(--brand); }
+  .alert-row { display: flex; gap: 10px; align-items: center; margin-top: 4px; }
+  .input { flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 14px; font-weight: 600; }
+  .btn { background: var(--brand); color: #fff; border-radius: 8px; padding: 9px 14px; font-size: 13px; font-weight: 600; }
+  .note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .footer { margin-top: 18px; font-size: 12px; color: var(--muted); text-align: right; }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <div class="caption">
+    <h1>Tagvello: UI mockup (MVP web app)</h1>
+    <span>Early design concept. Product names and prices are sample data, not real observations.</span>
+  </div>
+
+  <div class="screens">
+    <!-- Watchlist -->
+    <div>
+      <div class="label">1 · Watchlist</div>
+      <div class="screen">
+        <div class="nav">
+          <div class="logo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 12.2V4.5A1.5 1.5 0 0 1 4.5 3h7.7a1.5 1.5 0 0 1 1.06.44l7.3 7.3a1.5 1.5 0 0 1 0 2.12l-7.7 7.7a1.5 1.5 0 0 1-2.12 0l-7.3-7.3A1.5 1.5 0 0 1 3 12.2Z" fill="#2f6f5e"/><circle cx="8" cy="8" r="1.8" fill="#fff"/></svg>
+            Tagvello
+          </div>
+          <a>Search</a><a class="on">Watchlist</a><a>Alerts</a>
+          <div class="avatar">MK</div>
+        </div>
+        <div class="body">
+          <h2>My watchlist</h2>
+          <div class="sub">4 products · prices checked every 6 hours at Provo &amp; Orem Smith's</div>
+
+          <div class="item">
+            <div class="thumb" style="background:#fff4d6">🧀</div>
+            <div><div class="name">Medium Cheddar Cheese, 2 lb</div><div class="meta">Best at Orem Smith's · checked 2h ago</div></div>
+            <div class="price"><b>$8.49</b><br><span class="pill drop">↓ Below your $9.00 target</span></div>
+          </div>
+          <div class="item">
+            <div class="thumb" style="background:#e8f1fb">🥚</div>
+            <div><div class="name">Large Eggs, 18 ct</div><div class="meta">Best at Provo Smith's · checked 2h ago</div></div>
+            <div class="price"><b>$4.29</b><br><span class="pill ok">Target $3.50</span></div>
+          </div>
+          <div class="item">
+            <div class="thumb" style="background:#fbe9ea">🍓</div>
+            <div><div class="name">Strawberries, 1 lb</div><div class="meta">Best at Provo Smith's · checked 2h ago</div></div>
+            <div class="price"><b>$2.99</b><br><span class="pill ok">Lowest in 30 days</span></div>
+          </div>
+          <div class="item">
+            <div class="thumb" style="background:#eef0f4">☕</div>
+            <div><div class="name">Ground Coffee, 12 oz</div><div class="meta">Orem Smith's · last checked 2 days ago</div></div>
+            <div class="price"><b>$7.99</b><br><span class="pill grey">Price may be stale</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Product details -->
+    <div>
+      <div class="label">2 · Product details</div>
+      <div class="screen">
+        <div class="nav">
+          <div class="logo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 12.2V4.5A1.5 1.5 0 0 1 4.5 3h7.7a1.5 1.5 0 0 1 1.06.44l7.3 7.3a1.5 1.5 0 0 1 0 2.12l-7.7 7.7a1.5 1.5 0 0 1-2.12 0l-7.3-7.3A1.5 1.5 0 0 1 3 12.2Z" fill="#2f6f5e"/><circle cx="8" cy="8" r="1.8" fill="#fff"/></svg>
+            Tagvello
+          </div>
+          <a>Search</a><a class="on">Watchlist</a><a>Alerts</a>
+          <div class="avatar">MK</div>
+        </div>
+        <div class="body">
+          <div class="detail-head">
+            <div class="thumb" style="background:#fff4d6">🧀</div>
+            <div>
+              <h2>Medium Cheddar Cheese, 2 lb</h2>
+              <div class="sub" style="margin:0">UPC 0000000000000 · Dairy</div>
+            </div>
+            <div style="margin-left:auto;text-align:right">
+              <div class="big">$8.49</div>
+              <span class="pill drop">↓ 15% vs. 30-day average</span>
+            </div>
+          </div>
+
+          <div class="stats">
+            <div class="stat"><small>Lowest seen</small><b>$8.49</b></div>
+            <div class="stat"><small>Highest seen</small><b>$10.99</b></div>
+            <div class="stat"><small>30-day average</small><b>$9.99</b></div>
+            <div class="stat"><small>Observations</small><b>112</b></div>
+          </div>
+
+          <div class="grid2">
+            <div class="card">
+              <h3>Price history <span>Last 30 days · Orem Smith's</span></h3>
+              <svg width="100%" height="250" viewBox="0 0 470 190">
+                <g stroke="#eceef3" stroke-width="1">
+                  <line x1="34" y1="20" x2="470" y2="20"/><line x1="34" y1="70" x2="470" y2="70"/>
+                  <line x1="34" y1="120" x2="470" y2="120"/><line x1="34" y1="170" x2="470" y2="170"/>
+                </g>
+                <g font-size="11" fill="#8a91a3" font-family="Inter, Segoe UI, sans-serif">
+                  <text x="0" y="24">$11</text><text x="0" y="74">$10</text><text x="0" y="124">$9</text><text x="0" y="174">$8</text>
+                </g>
+                <line x1="34" y1="145" x2="470" y2="145" stroke="#c2410c" stroke-width="1.5" stroke-dasharray="5 4"/>
+                <text x="40" y="162" font-size="11" fill="#c2410c" font-family="Inter, Segoe UI, sans-serif">Target $9.00</text>
+                <path d="M34 70 L80 70 L110 45 L150 45 L170 70 L230 70 L250 20 L285 20 L300 70 L360 70 L380 95 L420 95 L440 145 L455 145 L470 145" fill="none" stroke="#2f6f5e" stroke-width="2.5" stroke-linejoin="round"/>
+                <path d="M34 70 L80 70 L110 45 L150 45 L170 70 L230 70 L250 20 L285 20 L300 70 L360 70 L380 95 L420 95 L440 145 L455 145 L470 145 L470 170 L34 170 Z" fill="#2f6f5e" opacity="0.08"/>
+                <circle cx="470" cy="145" r="4.5" fill="#2f6f5e"/>
+              </svg>
+            </div>
+            <div>
+              <div class="card">
+                <h3>Compare stores</h3>
+                <table>
+                  <tr class="best"><td>✓ Orem Smith's</td><td>$8.49</td></tr>
+                  <tr><td>Provo Smith's</td><td>$9.29</td></tr>
+                  <tr><td>Springville Smith's</td><td>$9.99</td></tr>
+                </table>
+              </div>
+              <div class="card" style="margin-top:14px">
+                <h3>Price alert</h3>
+                <div class="alert-row">
+                  <div class="input">Below $9.00</div>
+                  <div class="btn">Save</div>
+                </div>
+                <div class="note">Email me when any store drops below my target.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">Screens planned for the MVP: Search · Watchlist · Product details · Alert settings</div>
+</div>
+</body>
+</html>

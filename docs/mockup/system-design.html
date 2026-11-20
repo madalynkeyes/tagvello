@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tagvello system design</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Inter", "Segoe UI", system-ui, sans-serif; color: #1d2433; }
+  .canvas { position: relative; width: 1500px; height: 725px; background: #fbfbfd; }
+  .lane { position: absolute; border-radius: 18px; }
+  .lane.user { left: 30px; top: 30px; width: 1110px; height: 270px; background: #eef4fc; border: 1.5px solid #c9dbf3; }
+  .lane.bg { left: 30px; top: 380px; width: 1110px; height: 315px; background: #edf6f1; border: 1.5px solid #c7e3d4; }
+  .lane-title { position: absolute; left: 22px; top: 16px; font-size: 15px; font-weight: 700; letter-spacing: 0.02em; }
+  .lane.user .lane-title { color: #2a5a9e; }
+  .lane.bg .lane-title { color: #2c6e4f; top: auto; bottom: 14px; }
+  .lane-title span { font-weight: 500; opacity: 0.85; }
+  .box { position: absolute; background: #fff; border-radius: 12px; border: 1px solid #dfe3ea; box-shadow: 0 4px 14px rgba(29,36,51,0.07); padding: 14px 14px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+  .box .icon { font-size: 24px; line-height: 1; margin-bottom: 6px; }
+  .box b { font-size: 15.5px; display: block; margin-bottom: 4px; }
+  .box p { font-size: 13px; color: #5b6476; line-height: 1.35; }
+  .user .box, .box.u { border-top: 4px solid #4a86d4; }
+  .box.g { border-top: 4px solid #3f9a6e; }
+  .box.ext { border-top: 4px solid #9aa3b5; }
+  .box ol { text-align: left; font-size: 13px; color: #3d4556; line-height: 1.55; padding-left: 20px; margin-top: 4px; }
+  .lbl { position: absolute; font-size: 12.5px; color: #3d4556; text-align: center; line-height: 1.3; background: #fbfbfd; padding: 1px 6px; border-radius: 6px; }
+  .in-user { background: #eef4fc; }
+  .in-bg { background: #edf6f1; }
+  svg.arrows { position: absolute; left: 0; top: 0; pointer-events: none; }
+  .db-label { position: absolute; left: 1230px; top: 300px; width: 230px; text-align: center; }
+  .db-label b { font-size: 16px; display: block; }
+  .db-label p { font-size: 13px; color: #5b6476; line-height: 1.4; }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <!-- Lanes -->
+  <div class="lane user"><div class="lane-title">👆 USER PATH <span>· when you click something on the website</span></div></div>
+  <div class="lane bg"><div class="lane-title">⏰ BACKGROUND PATH <span>· runs on a timer, even when the site is closed</span></div></div>
+
+  <!-- Arrows -->
+  <svg class="arrows" width="1500" height="725">
+    <defs>
+      <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#4b5468"/>
+      </marker>
+    </defs>
+    <g stroke="#4b5468" stroke-width="2" fill="none" marker-end="url(#a)">
+      <!-- user path -->
+      <line x1="230" y1="170" x2="336" y2="170"/>
+      <line x1="510" y1="170" x2="616" y2="170"/>
+      <line x1="790" y1="170" x2="896" y2="170"/>
+      <!-- background path -->
+      <line x1="230" y1="510" x2="336" y2="510"/>
+      <path d="M570 500 L635 500 L635 475 L696 475"/>
+      <path d="M570 560 L635 560 L635 605 L696 605"/>
+    </g>
+    <!-- database links (two-way) -->
+    <g stroke="#7a5cc4" stroke-width="2.5" fill="none" marker-end="url(#a)" marker-start="url(#a)">
+      <path d="M1112 170 L1345 170 L1345 248"/>
+      <path d="M455 416 L455 340 L1226 340"/>
+    </g>
+    <!-- database cylinder -->
+    <g>
+      <path d="M1250 268 L1250 405 A95 22 0 0 0 1440 405 L1440 268" fill="#f1ecfb" stroke="#7a5cc4" stroke-width="2"/>
+      <ellipse cx="1345" cy="268" rx="95" ry="22" fill="#e4dbf7" stroke="#7a5cc4" stroke-width="2"/>
+    </g>
+  </svg>
+
+  <!-- User path boxes -->
+  <div class="box u" style="left:60px; top:110px; width:170px; height:120px;"><div class="icon">🔐</div><b>Amazon Cognito</b><p>Sign in with Google</p></div>
+  <div class="box u" style="left:340px; top:110px; width:170px; height:120px;"><div class="icon">🌐</div><b>Website</b><p>React + Vite<br>(S3 + CloudFront)</p></div>
+  <div class="box u" style="left:620px; top:110px; width:170px; height:120px;"><div class="icon">🚪</div><b>API Gateway</b><p>checks your login token</p></div>
+  <div class="box u" style="left:900px; top:100px; width:212px; height:140px;"><div class="icon">⚙️</div><b>FastAPI on Lambda</b><p>search · watchlist<br>alerts · price history</p></div>
+
+  <div class="lbl in-user" style="left:233px; top:100px; width:104px;">1. sign in,<br>get a login token</div>
+  <div class="lbl in-user" style="left:513px; top:130px; width:104px;">2. request<br>+ token</div>
+  <div class="lbl in-user" style="left:793px; top:140px; width:104px;">3. verified</div>
+
+  <!-- Background path boxes -->
+  <div class="box g" style="left:60px; top:450px; width:170px; height:120px;"><div class="icon">⏱️</div><b>EventBridge</b><p>Scheduler</p></div>
+  <div class="box g" style="left:340px; top:420px; width:230px; height:220px;"><div class="icon">🤖</div><b>Worker Lambda</b>
+    <ol><li>fetch each product once</li><li>save new prices</li><li>check alert rules</li><li>send alerts</li></ol></div>
+  <div class="box ext" style="left:700px; top:430px; width:200px; height:90px;"><b>🛒 Kroger API</b><p>Smith's stores</p></div>
+  <div class="box ext" style="left:700px; top:560px; width:200px; height:90px;"><b>✉️ Amazon SES</b><p>alert email</p></div>
+
+  <div class="lbl in-bg" style="left:233px; top:458px; width:104px;">every few<br>hours</div>
+  <div class="lbl in-bg" style="left:585px; top:446px; width:100px;">get prices</div>
+  <div class="lbl in-bg" style="left:585px; top:614px; width:100px;">send alert</div>
+
+  <!-- Database links labels -->
+  <div class="lbl" style="left:1150px; top:140px; width:110px;">read / write</div>
+  <div class="lbl" style="left:820px; top:312px; width:200px;">save prices, read alert rules</div>
+
+  <div class="db-label"><div style="font-size:24px">🗄️</div><b>PostgreSQL</b><p>Amazon RDS<br>(the shared database)</p></div>
+</div>
+</body>
+</html>
