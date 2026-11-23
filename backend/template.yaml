@@ -1,0 +1,5 @@
+# AWS SAM template for Tagvello. To be filled in on Nov 30 – Dec 1:
+# RDS, the API Lambda behind API Gateway, and the EventBridge worker Lambda.
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Tagvello backend

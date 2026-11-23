@@ -6,4 +6,5 @@ A record of work on Tagvello: the date, what I did, and how long it took.
 |------|------------|------:|
 | 11/17/2026 | Came up with ideas and planned the project: chose the price-data sources (Kroger, Best Buy), compared AWS and Railway costs, set up the GitHub repo, README, and project log | 1 |
 | 11/19/2026 | Initial design: wrote the project summary, "how it's different" table, and goals; designed the system diagram and ERD on a whiteboard (user path vs. background path, table groups and relationships); made the UI mockup; planned daily goals through Dec 10 | 2 |
-| **Total** | | **3** |
+| 11/23/2026 | Set up the project structure and Python venv; got a Kroger API key and tested the token, Locations, and Products APIs; compared prices across Smith's stores and chose Provo, Orem, Salt Lake, and Saratoga Springs; set up Postgres in Docker; wrote the schema (listings, price_observations, and notification_events by hand) and seed data, and tested the constraints | 2 |
+| **Total** | | **5** |

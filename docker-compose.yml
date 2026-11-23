@@ -1,0 +1,26 @@
+# Local PostgreSQL for Tagvello development.
+# Start:  docker compose up -d
+# Stop:   docker compose down        (data is kept in the tagvello-pgdata volume)
+# Reset:  docker compose down -v     (deletes all local data)
+services:
+  db:
+    image: postgres:17
+    container_name: tagvello-db
+    environment:
+      POSTGRES_USER: tagvello
+      POSTGRES_PASSWORD: tagvello
+      POSTGRES_DB: tagvello
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      - "5432:5432"
+    volumes:
+      - tagvello-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tagvello -d tagvello"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  tagvello-pgdata:
