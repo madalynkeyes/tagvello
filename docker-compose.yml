@@ -6,6 +6,7 @@ services:
   db:
     image: postgres:17
     container_name: tagvello-db
+    restart: unless-stopped        # come back up whenever Docker Desktop starts
     environment:
       POSTGRES_USER: tagvello
       POSTGRES_PASSWORD: tagvello

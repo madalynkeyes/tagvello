@@ -1,4 +1,10 @@
-"""Seed the products and listings that the worker will track."""
+"""Seed the products and listings that the worker will track.
+
+This decides what products to track by searching for a few terms at one store,
+and then inserting the first result with a UPC and price into the products table,
+and a listing for each store. Run this once or whenever you want to add more products to track.
+
+"""
 
 import os
 from pathlib import Path
